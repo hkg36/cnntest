@@ -1,11 +1,15 @@
-import gym
+import gymnasium as gym
 import numpy as np
 import numpy_gen
 import random
 from itertools import count
 
-env = gym.make('CartPole-v1')
-env._max_episode_steps=10000000
+gamename='CartPole-v1'#"LunarLander-v2" #'CartPole-v1'
+noise=0.01
+#noise=np.nan
+env = gym.make(gamename,render_mode=None)
+env2 = gym.make(gamename,render_mode="human")
+env._max_episode_steps=env2._max_episode_steps=10000000
 print(env.action_space)
 n_actions=env.action_space.n
 print(env.observation_space.shape[0])
@@ -42,10 +46,10 @@ def Mate(na,nb):
     newnn.n2=numpy_gen.Mate(na.n2,nb.n2)
     newnn.n3=numpy_gen.Mate(na.n3,nb.n3)
     return newnn
-def Mute(na):
-    numpy_gen.Mute(na.n1,0.05)
-    numpy_gen.Mute(na.n2,0.05)
-    numpy_gen.Mute(na.n3,0.05)
+def Mute(na,per=0.05):
+    numpy_gen.Mute(na.n1,per)
+    numpy_gen.Mute(na.n2,per)
+    numpy_gen.Mute(na.n3,per)
 
 gnn=[]
 for i in range(100):
@@ -56,41 +60,41 @@ def select_action(nn,state):
     res=nn.forward(state)
     return np.argmax(res)
 
-noise=0.01
 for i_episode in count():
-    noise+=0.001
-    if noise>0.05:
-        break
+    noise+=0.01
+    
     for n in gnn:
-        showrun=random.randint(0,1)
-        observation_last=env.reset()
+        observation_last=env.reset()[0]
+        rewardall=0
         for t in count():
             if random.random()<noise: #训练抗噪音信号的网络
                 action=random.randint(0,n_actions-1)
             else:
                 action = select_action(n,observation_last)
-            observation, reward, done,_= env.step(action)
+            observation, reward, done,_,_= env.step(action)
             observation_last=observation
-
+            rewardall+=reward
             if done or t>1000:
                 break
-        n.runstep=t
+        n.runstep=rewardall
     gnn.sort(key=lambda a:a.runstep,reverse=True)
 
     if True:
         print("max:",gnn[0].runstep)
-        observation_last=env.reset()
+        observation_last=env2.reset()[0]
         for t in count():
-            env.render()
-            if random.random()<0.02:
+            env2.render()
+            if random.random()<noise:
                 action=random.randint(0,n_actions-1)
             else:
                 action = select_action(gnn[0],observation_last)
-            observation, reward, done,_= env.step(action)
+            observation, reward, done,_,_= env2.step(action)
             observation_last=observation
             if done or t>300:
                 break
-
+    
+    if noise>0.5:
+        break
     if len(gnn)>500:
         gnn=gnn[:400]
     selparent=gnn[:50]
@@ -100,6 +104,3 @@ for i_episode in count():
         if random.random()<0.1:
             Mute(newnn)
         gnn.append(newnn)
-
-for n in gnn:
-    print(n.runstep)
