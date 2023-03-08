@@ -34,8 +34,11 @@ class ReplayMemory(object):
     def clear(self):
         self.memory.clear()
 memory=ReplayMemory(3000)
-env = gym.make('CartPole-v1')
-env._max_episode_steps=10000000
+gamename='CartPole-v1'#"LunarLander-v2" #'CartPole-v1'
+USERANDACT=True
+env = gym.make(gamename)
+env2 = gym.make(gamename,render_mode="human")
+#env._max_episode_steps=env2._max_episode_steps=10000000
 print(env.action_space)
 n_actions=env.action_space.n
 print(env.observation_space.shape[0])
@@ -62,15 +65,20 @@ policy_net.eval()
 optimizer = optim.RMSprop(policy_net.parameters(),lr=0.01)
 
 steps_done=0
+
 def select_action(state):
     global steps_done
     if state is None:
         return torch.tensor([[random.randrange(n_actions)]], device=device)
-
+    if USERANDACT==False:
+        with torch.no_grad():
+            return policy_net(state.unsqueeze(0)).max(1)[1]
+        
     sample = random.random()
     eps_threshold = EPS_END + (EPS_START - EPS_END) * \
         math.exp(-1. * steps_done / EPS_DECAY)
     steps_done += 1
+    
     if sample > eps_threshold:
         with torch.no_grad():
             # t.max(1) will return largest column value of each row.
@@ -147,4 +155,15 @@ for i_episode in count():
     if i_episode%TARGET_UPDATE==0:
         #pass
         target_net.load_state_dict(policy_net.state_dict())
+
+        observation_last=env2.reset()[0]
+        observation_last=torch.tensor(observation_last,device=device)
+        for t in count():
+            env2.render()
+            action = select_action(observation_last)
+            observation, reward, done,_,_= env2.step(action.item())
+            observation=torch.tensor(observation,device=device)
+            observation_last=observation
+            if done or t>300:
+                break
 env.close()
