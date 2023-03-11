@@ -4,9 +4,9 @@ import numpy_gen
 import random
 from itertools import count
 
-gamename='CartPole-v1'#"LunarLander-v2" #'CartPole-v1'
-noise=0.01
-#noise=np.nan
+gamename="LunarLander-v2"#"LunarLander-v2" #'CartPole-v1'
+#noise=0.01
+noise=np.nan
 env = gym.make(gamename,render_mode=None)
 env2 = gym.make(gamename,render_mode="human")
 env._max_episode_steps=env2._max_episode_steps=10000000
@@ -35,9 +35,9 @@ class GenNN(object):
             nn.Linear(10,actspace),
         """
         tmp=np.dot(x,self.n1)
-        tmp=numpy_gen.relu(tmp)
+        tmp=numpy_gen.leakyrelu(tmp)
         tmp=np.dot(tmp,self.n2)
-        tmp=numpy_gen.relu(tmp)
+        tmp=numpy_gen.leakyrelu(tmp)
         tmp=np.dot(tmp,self.n3)
         return tmp
 def Mate(na,nb):
@@ -102,5 +102,5 @@ for i_episode in count():
         pars=random.sample(selparent,2)
         newnn=Mate(*pars)
         if random.random()<0.1:
-            Mute(newnn)
+            Mute(newnn,0.01)
         gnn.append(newnn)

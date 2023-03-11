@@ -9,11 +9,13 @@ def Mate(a,b):
     return res
 def Mute(a,e=0.1):
     raded=np.random.rand(*a.shape)<e
-    r = np.random.rand(*a.shape)
-    a[raded]=r[raded]
+    r = np.random.rand(*a.shape)*0.01-0.005
+    a[raded]+=r[raded]
     return a
 def relu(inX):
     return np.maximum(0,inX)
+def leakyrelu(inX):
+    return np.maximum(inX*0.1,inX)
 def softmax(x):
     ep=np.exp(x)
     return ep/np.sum(ep)

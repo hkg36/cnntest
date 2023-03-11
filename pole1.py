@@ -33,9 +33,9 @@ class ReplayMemory(object):
         return len(self.memory)
     def clear(self):
         self.memory.clear()
-memory=ReplayMemory(3000)
-gamename='CartPole-v1'#"LunarLander-v2" #'CartPole-v1'
-USERANDACT=True
+memory=ReplayMemory(5000)
+gamename="LunarLander-v2"#"LunarLander-v2" #'CartPole-v1'
+USERANDACT=False
 env = gym.make(gamename)
 env2 = gym.make(gamename,render_mode="human")
 #env._max_episode_steps=env2._max_episode_steps=10000000
@@ -46,10 +46,12 @@ class DQN(nn.Module):
     def __init__(self, obshape,actspace):
         super(DQN, self).__init__()
         self.proc=nn.Sequential(
-            nn.Linear(obshape,20),
-            nn.ReLU(),
+            nn.Linear(obshape,40),
+            nn.Softmax(),
+            nn.Linear(40,20),
+            nn.Softmax(),
             nn.Linear(20,10),
-            nn.ReLU(),
+            nn.LeakyReLU(),
             nn.Linear(10,actspace),
         )
 
@@ -147,8 +149,7 @@ for i_episode in count():
             break
     
     loss=1.0
-    if t<1000:
-        loss=optimize_model()
+    loss=optimize_model()
     print(f"({ave_t:.2f}){t}\tloss\t{loss:.4f}")
     #if ave_t<10 and steps_done>EPS_DECAY:
     #    steps_done=EPS_DECAY
@@ -164,6 +165,6 @@ for i_episode in count():
             observation, reward, done,_,_= env2.step(action.item())
             observation=torch.tensor(observation,device=device)
             observation_last=observation
-            if done or t>300:
+            if done or t>1000:
                 break
 env.close()
