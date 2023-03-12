@@ -21,6 +21,57 @@ def softmax(x):
     return ep/np.sum(ep)
 def sigmoid(x):
     return 1/(1 + np.exp(-x))
+
+class GenNNBase(object):
+    def __init__(self) -> None:
+        self.score=np.nan
+    def forward(self, x):
+        tmp=x
+        for l in self.line:
+            if l[0]=="func":
+                tmp=l[1](tmp)
+            elif l[0]=="array":
+                tmp=np.dot(tmp,l[1])
+        return tmp
+    def Mute(self,per=0.05):
+        for l in self.line:
+            if l[0]=="array":
+                Mute(l[1],per)
+class GenNNFactory(object):
+    def __init__(self,*argv) -> None:
+        self.nnCls=GenNNBase
+        self.line=[]
+        for o in argv:
+            if callable(o):
+                self.line.append(["func",o])
+            elif isinstance(o,(list,tuple)):
+                self.line.append(["array",o])
+    def setNNClass(self,cls=GenNNBase):
+        assert issubclass(cls, GenNNBase)
+        self.nnCls=cls
+    def NewNN(self):
+        newone=self.nnCls()
+        liner=[]
+        for l in self.line:
+            if l[0]=="func":
+                liner.append(["func",l[1]])
+            elif l[0]=="array":
+                liner.append(["array",np.random.rand(*l[1])])
+        newone.line=liner
+        return newone
+    def Mate(self,na,nb):
+        newone=self.nnCls()
+        liner=[]
+        for i in range(len(self.line)):
+            l=self.line[i]
+            if l[0]=="func":
+                liner.append(["func",l[1]])
+            elif l[0]=="array":
+                liner.append(["array",Mate(na.line[i][1],nb.line[i][1])])
+        newone.line=liner
+        return newone
+    def Mute(self,na,per=0.05):
+        na.Mute(per)
 if __name__=="__main__":
     # input array
     x = np.array([[ 0.1, 0.2, 0.3], [ 0.4, 0.5, 0.6], [ 0.7, 0.8, .9]])

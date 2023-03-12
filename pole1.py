@@ -6,9 +6,11 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import math
+import numpy as np
 from itertools import count
 
-BATCH_SIZE = 1000
+MEMORYSIZE = 3000
+BATCH_SIZE = int(MEMORYSIZE/3*2)
 GAMMA = 0.95
 TARGET_UPDATE = 5
 EPS_START = 0.9
@@ -33,7 +35,7 @@ class ReplayMemory(object):
         return len(self.memory)
     def clear(self):
         self.memory.clear()
-memory=ReplayMemory(5000)
+memory=ReplayMemory(MEMORYSIZE)
 gamename="LunarLander-v2"#"LunarLander-v2" #'CartPole-v1'
 USERANDACT=False
 env = gym.make(gamename)
@@ -42,14 +44,13 @@ env2 = gym.make(gamename,render_mode="human")
 print(env.action_space)
 n_actions=env.action_space.n
 print(env.observation_space.shape[0])
+ob_shape=env.observation_space.shape[0]-2
 class DQN(nn.Module):
     def __init__(self, obshape,actspace):
         super(DQN, self).__init__()
         self.proc=nn.Sequential(
-            nn.Linear(obshape,40),
-            nn.Softmax(),
-            nn.Linear(40,20),
-            nn.Softmax(),
+            nn.Linear(obshape,20),
+            nn.LeakyReLU(),
             nn.Linear(20,10),
             nn.LeakyReLU(),
             nn.Linear(10,actspace),
@@ -58,8 +59,8 @@ class DQN(nn.Module):
     def forward(self, x):
         return self.proc(x)
 
-policy_net = DQN(env.observation_space.shape[0], n_actions).to(device)
-target_net = DQN(env.observation_space.shape[0], n_actions).to(device)
+policy_net = DQN(ob_shape, n_actions).to(device)
+target_net = DQN(ob_shape, n_actions).to(device)
 target_net.load_state_dict(policy_net.state_dict())
 target_net.eval()
 policy_net.eval()
@@ -93,7 +94,7 @@ def select_action(state):
 criterion = nn.SmoothL1Loss()
 def optimize_model():
     if len(memory) < BATCH_SIZE:
-        return 1.0
+        return 1000
     transitions = memory.sample(BATCH_SIZE)
     batch = Transition(*zip(*transitions))
     non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
@@ -119,21 +120,24 @@ def optimize_model():
 
 observation_last=None
 
-TARGET_SHOW=20
 reward0=torch.tensor([0], device=device)
-ave_t=0
 for i_episode in count():
     observation_last=env.reset()[0]
-    observation_last=torch.tensor(observation_last,device=device)
+    touch=observation_last[-2:]
+    observation_last=torch.tensor(observation_last[:-2],device=device)
     
     go_update=False
     tmprecord=[]
+    reward_sum=0
     for t in count():
-        if i_episode % TARGET_SHOW == 0 or t>100:
-            env.render()
-        action = select_action(observation_last)
+        if np.any(touch):
+            action=torch.tensor([0,])
+        else:
+            action = select_action(observation_last)
         observation, reward, done,_,_= env.step(action.item())
-        observation=torch.tensor(observation,device=device)
+        reward_sum+=reward
+        touch=observation[-2:]
+        observation=torch.tensor(observation[:-2],device=device)
         reward = torch.tensor([reward], device=device)
         if observation_last is not None:
             if done:
@@ -142,29 +146,32 @@ for i_episode in count():
                 tmprecord.append(Transition(observation_last,action,observation,reward))
         observation_last=observation
         #optimize_model()
-        if done or t>1000:
-            if t>(ave_t*0.8) or t>150:
-                ave_t=ave_t*0.9+t*0.1
+        if done or reward_sum<-200:
             memory.push_bash(tmprecord)
             break
     
-    loss=1.0
     loss=optimize_model()
-    print(f"({ave_t:.2f}){t}\tloss\t{loss:.4f}")
+    print(f"({reward_sum}),{t}\tloss\t{loss:.4f}")
     #if ave_t<10 and steps_done>EPS_DECAY:
     #    steps_done=EPS_DECAY
     if i_episode%TARGET_UPDATE==0:
         #pass
         target_net.load_state_dict(policy_net.state_dict())
 
-        observation_last=env2.reset()[0]
-        observation_last=torch.tensor(observation_last,device=device)
-        for t in count():
-            env2.render()
-            action = select_action(observation_last)
-            observation, reward, done,_,_= env2.step(action.item())
-            observation=torch.tensor(observation,device=device)
-            observation_last=observation
-            if done or t>1000:
-                break
+        if reward_sum>100:
+            observation_last=env2.reset()[0]
+            touch=observation_last[-2:]
+            observation_last=torch.tensor(observation_last[:-2],device=device)
+            for t in count():
+                env2.render()
+                if np.any(touch):
+                    action=torch.tensor([0,])
+                else:
+                    action = select_action(observation_last)
+                observation, reward, done,_,_= env2.step(action.item())
+                touch=observation[-2:]
+                observation=torch.tensor(observation[:-2],device=device)
+                observation_last=observation
+                if done or t>1000:
+                    break
 env.close()
