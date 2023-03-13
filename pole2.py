@@ -14,16 +14,16 @@ print(env.action_space)
 print(env.observation_space.shape[0])
 o_shape=env.observation_space.shape[0]-2
 
-class MyGNN(numpy_gen.GenNNBase):
-    def __init__(self) -> None:
-        super().__init__()
-        self.scrohis=[]
-factory=numpy_gen.GenNNFactory((o_shape,20),
+a1=[0,0.5,1]
+a1len=len(a1)
+a2=[-1,-0.75,0,0.75,1]
+a2len=len(a2)
+factory=numpy_gen.GenNNFactory((o_shape,40),
                                numpy_gen.leakyrelu,
-                               (20,10),
+                               (40,20),
                                numpy_gen.leakyrelu,
-                               (10,4))
-#factory.setNNClass(MyGNN)
+                               (20,a1len*a2len))
+
 gnn=[]
 for i in range(100):
     gn=factory.NewNN()
@@ -39,17 +39,11 @@ def RunOne(env,nn):
         if np.all(observation_last[-2:]):
             stopjet=True
         res=nn.forward(observation_last[:-2])
-        resact = np.argmax(res)
-        if resact==0:
-            act_take=np.array([0,0])
-        elif resact==1:
-            act_take=np.array([0,-1])
-        elif resact==2:
-            act_take=np.array([1,0])
-        elif resact==3:
-            act_take=np.array([0,1])
-        #if stopjet and action==2:
-        #    action=0
+        resact = np.unravel_index(np.argmax(res, axis=None), (a1len,a2len))
+        act_take[0]=a1[resact[0]]
+        act_take[1]=a2[resact[1]]
+        #if stopjet:
+        #    act_take[0]=0
         observation, reward, done,_,_= env.step(act_take)
         observation_last=observation
         rewardall+=reward
