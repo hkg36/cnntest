@@ -36,15 +36,15 @@ def RunOne(env,nn):
     observation_last=env.reset()[0]
     rewardall=0
     stopjet=False
-    act_take=np.array([0,0])
+    act_take=np.zeros([len(acts_len),])
     for t in count():
         env.render()
         if np.all(observation_last[-2:]):
             stopjet=True
         res=nn.forward(observation_last[:-2])
         resact = np.unravel_index(np.argmax(res, axis=None), acts_len)
-        act_take[0]=acts[0][resact[0]]
-        act_take[1]=acts[1][resact[1]]
+        for i in range(len(acts_len)):
+            act_take[i]=acts[i][resact[i]]
         if stopjet:
             act_take[0]=0
         observation, reward, done,_,_= env.step(act_take)
