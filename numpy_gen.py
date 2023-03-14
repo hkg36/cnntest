@@ -72,6 +72,19 @@ class GenNNFactory(object):
         return newone
     def Mute(self,na,per=0.05):
         na.Mute(per)
+def BuildGenNNFactory(*argv):
+    last_layer=np.nan
+    lays=[]
+    for o in argv:
+        if isinstance(o,int):
+            if np.isnan(last_layer):
+                last_layer=o
+            else:
+                lays.append([last_layer,o])
+                last_layer=o
+        elif callable(o):
+            lays.append(o)
+    return GenNNFactory(*lays)
 if __name__=="__main__":
     # input array
     x = np.array([[ 0.1, 0.2, 0.3], [ 0.4, 0.5, 0.6], [ 0.7, 0.8, .9]])
