@@ -12,7 +12,7 @@ from itertools import count
 MEMORYSIZE = 3000
 BATCH_SIZE = int(MEMORYSIZE/3*2)
 GAMMA = 0.95
-TARGET_UPDATE = 5
+TARGET_UPDATE = 20
 EPS_START = 0.9
 EPS_END = 0.05
 EPS_DECAY = 200
@@ -36,7 +36,7 @@ class ReplayMemory(object):
     def clear(self):
         self.memory.clear()
 memory=ReplayMemory(MEMORYSIZE)
-gamename="LunarLander-v2"#"LunarLander-v2" #'CartPole-v1'
+gamename='CartPole-v1'#"LunarLander-v2" #'CartPole-v1'
 USERANDACT=False
 env = gym.make(gamename)
 env2 = gym.make(gamename,render_mode="human")
@@ -44,7 +44,7 @@ env2 = gym.make(gamename,render_mode="human")
 print(env.action_space)
 n_actions=env.action_space.n
 print(env.observation_space.shape[0])
-ob_shape=env.observation_space.shape[0]-2
+ob_shape=env.observation_space.shape[0]
 class DQN(nn.Module):
     def __init__(self, obshape,actspace):
         super(DQN, self).__init__()
@@ -123,21 +123,16 @@ observation_last=None
 reward0=torch.tensor([0], device=device)
 for i_episode in count():
     observation_last=env.reset()[0]
-    touch=observation_last[-2:]
-    observation_last=torch.tensor(observation_last[:-2],device=device)
+    observation_last=torch.tensor(observation_last,device=device)
     
     go_update=False
     tmprecord=[]
     reward_sum=0
     for t in count():
-        if np.any(touch):
-            action=torch.tensor([0,])
-        else:
-            action = select_action(observation_last)
+        action = select_action(observation_last)
         observation, reward, done,_,_= env.step(action.item())
         reward_sum+=reward
-        touch=observation[-2:]
-        observation=torch.tensor(observation[:-2],device=device)
+        observation=torch.tensor(observation,device=device)
         reward = torch.tensor([reward], device=device)
         if observation_last is not None:
             if done:
@@ -146,7 +141,7 @@ for i_episode in count():
                 tmprecord.append(Transition(observation_last,action,observation,reward))
         observation_last=observation
         #optimize_model()
-        if done or reward_sum<-200:
+        if done or t>1000:
             memory.push_bash(tmprecord)
             break
     
@@ -158,19 +153,14 @@ for i_episode in count():
         #pass
         target_net.load_state_dict(policy_net.state_dict())
 
-        if reward_sum>100:
+        if True:#reward_sum>100:
             observation_last=env2.reset()[0]
-            touch=observation_last[-2:]
-            observation_last=torch.tensor(observation_last[:-2],device=device)
+            observation_last=torch.tensor(observation_last,device=device)
             for t in count():
                 env2.render()
-                if np.any(touch):
-                    action=torch.tensor([0,])
-                else:
-                    action = select_action(observation_last)
+                action = select_action(observation_last)
                 observation, reward, done,_,_= env2.step(action.item())
-                touch=observation[-2:]
-                observation=torch.tensor(observation[:-2],device=device)
+                observation=torch.tensor(observation,device=device)
                 observation_last=observation
                 if done or t>1000:
                     break

@@ -5,6 +5,12 @@ import random
 from itertools import count
 from functools import reduce
 
+def Mute(a,e=0.1):
+    raded=np.random.rand(*a.shape)<e
+    r = np.random.rand(*a.shape)*1.2-0.1
+    a[raded]=r[raded]
+    return a
+numpy_gen.Mute=Mute
 gamename="BipedalWalker-v3"
 
 env = gym.make(gamename,render_mode=None)
@@ -20,9 +26,9 @@ acts=[
 acts_len=[len(a) for a in acts]
 output=reduce(lambda x,y:x*y,acts_len)
 print("output:",output)
-factory=numpy_gen.BuildGenNNFactory(o_shape,80,numpy_gen.leakyrelu,
-                                    60,numpy_gen.leakyrelu,
-                                    40,numpy_gen.leakyrelu,
+factory=numpy_gen.BuildGenNNFactory(o_shape,120,numpy_gen.leakyrelu,
+                                    100,numpy_gen.leakyrelu,
+                                    90,numpy_gen.leakyrelu,
                                     output)
 
 gnn=[]
