@@ -15,8 +15,8 @@ print(env.observation_space.shape[0])
 o_shape=env.observation_space.shape[0]-2
 
 acts=[
-    [0,0.5,1],
-    [-1,-0.75,0,0.75,1]
+    [0,0.3,0.7,1],
+    [-1,-0.75,-0.25,0,0.25,0.75,1]
 ]
 acts_len=[len(a) for a in acts]
 
@@ -25,7 +25,7 @@ acts_len=[len(a) for a in acts]
                                (40,20),
                                numpy_gen.leakyrelu,
                                (20,a1len*a2len))"""
-factory=numpy_gen.BuildGenNNFactory(o_shape,40,numpy_gen.leakyrelu,20,numpy_gen.leakyrelu,reduce(lambda x,y:x*y,acts_len))
+factory=numpy_gen.BuildGenNNFactory(o_shape,60,numpy_gen.leakyrelu,40,numpy_gen.leakyrelu,reduce(lambda x,y:x*y,acts_len))
 
 gnn=[]
 for i in range(100):
