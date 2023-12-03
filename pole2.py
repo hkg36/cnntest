@@ -25,7 +25,7 @@ acts_len=[len(a) for a in acts]
                                (40,20),
                                numpy_gen.leakyrelu,
                                (20,a1len*a2len))"""
-factory=numpy_gen.BuildGenNNFactory(o_shape,60,numpy_gen.leakyrelu,40,numpy_gen.leakyrelu,reduce(lambda x,y:x*y,acts_len))
+factory=numpy_gen.BuildGenNNFactory(o_shape,40,numpy_gen.leakyrelu,20,numpy_gen.leakyrelu,reduce(lambda x,y:x+y,acts_len))
 
 gnn=[]
 for i in range(100):
@@ -42,9 +42,12 @@ def RunOne(env,nn):
         if np.all(observation_last[-2:]):
             stopjet=True
         res=nn.forward(observation_last[:-2])
-        resact = np.unravel_index(np.argmax(res, axis=None), acts_len)
+        #resact = np.unravel_index(np.argmax(res, axis=None), acts_len)
+        pre=0
         for i in range(len(acts_len)):
-            act_take[i]=acts[i][resact[i]]
+            aft=pre+acts_len[i]
+            act_take[i]=acts[i][np.argmax(res[pre:aft])]
+        #    act_take[i]=acts[i][resact[i]]
         if stopjet:
             act_take[0]=0
         observation, reward, done,_,_= env.step(act_take)
@@ -67,7 +70,7 @@ for i_episode in count():
 
     if len(gnn)>500:
         gnn=gnn[:400]
-    selparent=gnn[:20]
+    selparent=gnn[:40]
     for i in range(100):
         pars=random.sample(selparent,2)
         newnn=factory.Mate(*pars)
