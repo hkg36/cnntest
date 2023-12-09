@@ -19,3 +19,4 @@ static/hgt_sgt.html
 *.pyd
 conf.ini
 try.py
+*.pickle

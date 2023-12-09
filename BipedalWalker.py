@@ -4,11 +4,13 @@ import numpy_gen
 import random
 from itertools import count
 from functools import reduce
+import pickle
+import os
 
 gamename="BipedalWalker-v3"
 
 env = gym.make(gamename,render_mode=None)
-env2 = gym.make(gamename,render_mode="human")
+#env2 = gym.make(gamename,render_mode="human")
 print(env.action_space)
 #n_actions=env.action_space.n
 print(env.observation_space.shape[0])
@@ -23,16 +25,21 @@ acts=[
     [-1,0,1] for i in range(4)
     ]
 acts_len=[len(a) for a in acts]
-output=reduce(lambda x,y:x*y,acts_len)
+output=reduce(lambda x,y:x+y,acts_len)
 print("output:",output)
 factory=numpy_gen.BuildGenNNFactory(o_shape,120,numpy_gen.leakyrelu,
-                                    100,numpy_gen.leakyrelu,
+                                    60,numpy_gen.leakyrelu,
                                     output)
 
 gnn=[]
-for i in range(1000):
-    gn=factory.NewNN()
-    gnn.append(gn)
+savegnnfile=r"bworklist.pickle"
+if os.path.isfile(savegnnfile):
+    with open(savegnnfile, "rb") as input_file:
+        gnn = pickle.load(input_file)
+else:
+    for i in range(1000):
+        gn=factory.NewNN()
+        gnn.append(gn)
 step_max=1000
 
 def tranobservation(ob):
@@ -48,9 +55,12 @@ def RunOne(env,nn):
         env.render()
         tran_observation=tranobservation(observation_last)
         res=nn.forward(tran_observation)
-        resact = np.unravel_index(np.argmax(res, axis=None), acts_len)
+        #resact = np.unravel_index(np.argmax(res, axis=None), acts_len)
+        pre=0
         for i in range(len(acts_len)):
-            act_take[i]=acts[i][resact[i]]
+            aft=pre+acts_len[i]
+            act_take[i]=acts[i][np.argmax(res[pre:aft])]
+            #act_take[i]=acts[i][resact[i]]
         observation, reward, done,_,_= env.step(act_take)
         observation_last=observation
         rewardall+=reward
@@ -66,13 +76,15 @@ for i_episode in count():
         n.scrohis=n.scrohis[-3:]
         n.score=sum(n.scrohis)/len(n.scrohis)"""
     gnn.sort(key=lambda a:a.score,reverse=True)
-    print("max:",gnn[0].score)
-    if i_episode%2==0 and gnn[0].score>50:
-        RunOne(env2,gnn[0])
+    print(i_episode,"--max:",gnn[0].score)
+    #if i_episode%2==0 and gnn[0].score>50:
+    #    RunOne(env2,gnn[0])
 
-    if len(gnn)>200:
-        gnn=gnn[:200]
-    selparent=gnn[:50]
+    if len(gnn)>800:
+        gnn=gnn[:800]
+    with open(savegnnfile, "wb") as output_file:
+        pickle.dump(gnn, output_file)
+    selparent=gnn[:200]
     for i in range(200):
         pars=random.sample(selparent,2)
         newnn=factory.Mate(*pars)
