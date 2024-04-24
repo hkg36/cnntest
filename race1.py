@@ -85,8 +85,8 @@ for i_episode in range(n_episodes):
     if i_episode%5==0:
         RunOne(env2,gnn[0])
 
-    if len(gnn)>500:
-        gnn=gnn[:400]
+    if len(gnn)>200:
+        gnn=gnn[:150]
     selparent=gnn[:40]
     for i in range(100):
         pars=random.sample(selparent,2)
