@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 from collections import namedtuple, deque
 import random
 import torch
@@ -112,7 +112,7 @@ TARGET_SHOW=20
 reward0=torch.tensor([0], device=device)
 ave_t=0
 for i_episode in count():
-    observation_last=env.reset()
+    observation_last=env.reset()[0]
     observation_last=torch.tensor(observation_last,device=device)
     
     go_update=False
@@ -121,7 +121,7 @@ for i_episode in count():
         if i_episode % TARGET_SHOW == 0:
             env.render()
         action = select_action(observation_last)
-        observation, reward, done, _= env.step(action.item())
+        observation, reward, done, _,_= env.step(action.item())
         observation=torch.tensor(observation,device=device)
         reward = torch.tensor([reward], device=device)
         if observation_last is not None:
