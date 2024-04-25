@@ -21,7 +21,7 @@ acts=[
     [0,1]
 ]
 acts_len=[len(a) for a in acts]
-factory=numpy_gen.BuildGenNNFactory(5,40,numpy_gen.leakyrelu,20,numpy_gen.leakyrelu,reduce(lambda x,y:x+y,acts_len))
+factory=numpy_gen.BuildGenNNFactory(6,40,numpy_gen.leakyrelu,20,numpy_gen.leakyrelu,reduce(lambda x,y:x+y,acts_len))
 
 gnn=[]
 for i in range(100):
@@ -36,6 +36,8 @@ def countDis(dt):
         c+=1
     return c
 def transState(observation):
+    speedline=observation[85:95,13,0]
+    speed=(speedline>150).sum()+(speedline>250).sum()
     img = observation[:84, 6:90]
     img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     forward=img[:65,42]<140
@@ -44,7 +46,7 @@ def transState(observation):
     sideright=side[42:][::-1]
     leftforward=np.diagonal(img,42-65)[:42]<140
     rightforward=np.diagonal(np.fliplr(img),42-65)[:42]<140
-    return np.array((countDis(forward),countDis(sideleft),countDis(sideright),countDis(leftforward),countDis(rightforward)))
+    return np.array((countDis(forward),countDis(sideleft),countDis(sideright),countDis(leftforward),countDis(rightforward),float(speed)))
 
 def RunOne(env,nn):
     observation = env.reset()
@@ -66,9 +68,10 @@ def RunOne(env,nn):
         observation, reward, done, info,_ = env.step(act_take)
         if t<80:
             continue
+        
         state=transState(observation)
         sum_reward += reward
-        if (state<=0).any() or sum_reward<=-10:
+        if (state[:-1]<=0).any() or sum_reward<=-10:
             done=True
         #print(state,reward)
         

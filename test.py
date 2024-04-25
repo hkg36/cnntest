@@ -1,20 +1,27 @@
+import gymnasium as gym
+from itertools import count
+from functools import reduce
 import numpy as np
+import cv2
+import matplotlib.pyplot as plt
+env = gym.make('CarRacing-v2',render_mode="human")
 
-a = np.array([[10, 30, 20], [60, 40, 50]])
-ai = np.argsort(a, axis=1)
-print(ai)
-ai=np.array([2,2])
-ai=np.expand_dims(ai,axis=1)
-res=np.take_along_axis(a, ai, axis=1)
-
-
-# load and display an image with Matplotlib
-from matplotlib import image
-from matplotlib import pyplot
-# load image as pixel array
-image = image.imread('data/img.jpg')
-image=np.moveaxis(image, 2, 0)
-# summarize shape of the pixel array
-# display the array of pixels as an image
-pyplot.imshow(image[1],cmap ='gray')
-pyplot.show()
+env.reset()
+sum_reward=0
+for t in count():
+    # [steering, gas, brake]
+    act_take=np.array([0,1,0])
+    # observation is 96x96x3
+    observation, reward, done, info,_ = env.step(act_take)
+    if t<100:
+        continue
+    speedline=observation[85:95,13,0]
+    img = cv2.cvtColor(observation, cv2.COLOR_RGB2GRAY)
+    plt.imshow(img, cmap='gray')
+    plt.show()
+    sum_reward += reward
+    
+    if done:
+        print(f"finished after {t+1} timesteps Reward: {sum_reward}")
+    if done:
+        break
