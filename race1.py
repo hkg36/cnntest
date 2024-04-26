@@ -5,6 +5,8 @@ import numpy_gen
 from itertools import count
 from functools import reduce
 import random
+import pickle
+import os
 # import myplot
 
 render = True
@@ -24,9 +26,14 @@ acts_len=[len(a) for a in acts]
 factory=numpy_gen.BuildGenNNFactory(6,40,numpy_gen.leakyrelu,20,numpy_gen.leakyrelu,reduce(lambda x,y:x+y,acts_len))
 
 gnn=[]
-for i in range(100):
-    gn=factory.NewNN()
-    gnn.append(gn)
+savefile="data/save.data"
+if os.path.exists(savefile):
+    with open(savefile,"rb") as f:
+        gnn=pickle.load(f)
+else:
+    for i in range(100):
+        gn=factory.NewNN()
+        gnn.append(gn)
 
 def countDis(dt):
     c=0
@@ -85,11 +92,13 @@ for i_episode in range(n_episodes):
         n.score=RunOne(env,n)
     gnn.sort(key=lambda a:a.score,reverse=True)
     print("max:",gnn[0].score)
-    if i_episode%5==0:
+    if i_episode%2==0:
         RunOne(env2,gnn[0])
 
     if len(gnn)>200:
         gnn=gnn[:150]
+    with open(savefile,"wb") as f:
+        pickle.dump(gnn, f, pickle.HIGHEST_PROTOCOL)
     selparent=gnn[:40]
     for i in range(100):
         pars=random.sample(selparent,2)
