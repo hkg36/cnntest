@@ -25,6 +25,8 @@ def sigmoid(x):
 class GenNNBase(object):
     def __init__(self) -> None:
         self.score=np.nan
+    def runed(self):
+        return np.isnan(self.score)==False
     def forward(self, x):
         tmp=x
         for l in self.line:
