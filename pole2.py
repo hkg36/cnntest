@@ -25,7 +25,7 @@ acts_len=[len(a) for a in acts]
                                (40,20),
                                numpy_gen.leakyrelu,
                                (20,a1len*a2len))"""
-factory=numpy_gen.BuildGenNNFactory(o_shape,40,numpy_gen.leakyrelu,20,numpy_gen.leakyrelu,reduce(lambda x,y:x+y,acts_len))
+factory=numpy_gen.BuildGenNNFactory(o_shape,40,numpy_gen.leakyrelu,20,numpy_gen.softmax,reduce(lambda x,y:x+y,acts_len))
 
 gnn=[]
 for i in range(100):

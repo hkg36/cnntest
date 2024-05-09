@@ -31,7 +31,7 @@ acts=[
     [0,1]
 ]
 acts_len=[len(a) for a in acts]
-factory=numpy_gen.BuildGenNNFactory(6,40,numpy_gen.leakyrelu,20,numpy_gen.leakyrelu,5)#reduce(lambda x,y:x+y,acts_len))
+factory=numpy_gen.BuildGenNNFactory(6,40,numpy_gen.softmax,20,numpy_gen.softmax,5)#reduce(lambda x,y:x+y,acts_len))
 
 gnn=[]
 savefile="data/save.data"
@@ -75,18 +75,17 @@ def RunOne(env,nn,userand=False):
         act_take=0
         if t>80:
             if state is not None:
-                if userand and random.random()<0.1:
-                    act_take=random.randint(1,2)
-                else:
-                    res=nn.forward(state)
-                    """pre=0
-                    for i in range(len(acts_len)):
-                        aft=pre+acts_len[i]
-                        act_take[i]=acts[i][np.argmax(res[pre:aft])]"""
-                    act_take=np.argmax(res)
-        # observation is 96x96x3
+                res=nn.forward(state)
+                """pre=0
+                for i in range(len(acts_len)):
+                    aft=pre+acts_len[i]
+                    act_take[i]=acts[i][np.argmax(res[pre:aft])]"""
+                act_take=np.argmax(res)
         if state is not None and state[5]>5 and act_take==3:
-            act_take=0
+            if userand:# and random.random()<0.1:
+                act_take=random.choice([1,2,4])
+            else:
+                act_take=0
         observation, reward, done, info,_ = env.step(act_take)
         if t<80:
             continue
